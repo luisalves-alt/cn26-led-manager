@@ -34,13 +34,6 @@ export default async function DesignerSelectPage() {
             >
               <div className="flex items-center gap-3">
                 <span className="font-medium text-lg">{designer.name}</span>
-                <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${
-                  designer.type === 'image'
-                    ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                    : 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-                }`}>
-                  {designer.type === 'image' ? '🖼️ Imagem' : '🎬 Vídeo'}
-                </span>
               </div>
               <span className="text-zinc-600 group-hover:text-zinc-400 transition-colors">→</span>
             </a>
