@@ -47,6 +47,7 @@ export interface SetupData {
 export interface DirectorRow {
   dayNumber: number
   dayLabel: string
+  periodId: string
   periodLabel: string
   designerName: string
   taskType: DesignerType

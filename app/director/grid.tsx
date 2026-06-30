@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
-import { markApproved, requestRevision } from '@/lib/actions'
+import { markApproved, requestRevision, moveTask } from '@/lib/actions'
 import type { DirectorRow, DeliveryStatus } from '@/types'
 
 function driveUrl(id: string) {
@@ -81,14 +81,51 @@ function RowActions({ row }: { row: DirectorRow }) {
   )
 }
 
+function MoveTaskButton({ taskId, currentPeriodId, periods }: {
+  taskId: string
+  currentPeriodId?: string
+  periods: { id: string; label: string; dayLabel: string }[]
+}) {
+  const [open, setOpen] = useState(false)
+  const [pending, startTransition] = useTransition()
+
+  const others = periods.filter(p => p.id !== currentPeriodId)
+  if (others.length === 0) return null
+
+  return (
+    <div className="relative">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="text-xs px-2 py-1 text-zinc-600 hover:text-zinc-400 transition-colors" title="Mover tarefa">
+        ⇄
+      </button>
+      {open && (
+        <div className="absolute right-0 top-6 z-30 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl py-1 min-w-[180px]">
+          <p className="text-xs text-zinc-500 px-3 py-1.5 border-b border-zinc-800">Mover para…</p>
+          {others.map(p => (
+            <button key={p.id} type="button" disabled={pending}
+              onClick={() => startTransition(async () => {
+                await moveTask(taskId, p.id)
+                setOpen(false)
+              })}
+              className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 transition-colors disabled:opacity-50">
+              <span className="text-zinc-500">{p.dayLabel} · </span>{p.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface Props {
   eventName: string
   driveFolderId: string | null
   rows: DirectorRow[]
   allDayLabels: string[]
+  periods: { id: string; label: string; dayLabel: string }[]
 }
 
-export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLabels }: Props) {
+export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLabels, periods }: Props) {
   const router = useRouter()
 
   useEffect(() => {
@@ -175,6 +212,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                       <th className="text-left px-5 py-3 font-medium">Tarefa</th>
                       <th className="text-left px-5 py-3 font-medium w-32">Status</th>
                       <th className="text-left px-5 py-3 font-medium w-56"></th>
+                      <th className="px-3 py-3 w-10"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -195,6 +233,9 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                           <td className="px-5 py-4 text-zinc-200 text-sm align-middle">{row.taskName}</td>
                           <td className="px-5 py-4 align-middle"><StatusBadge status={row.status} /></td>
                           <td className="px-5 py-4 align-middle"><RowActions row={row} /></td>
+                          <td className="px-3 py-4 align-middle">
+                            <MoveTaskButton taskId={row.taskId} currentPeriodId={row.periodId} periods={periods} />
+                          </td>
                         </tr>
                       )
                     })}

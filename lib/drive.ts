@@ -45,6 +45,23 @@ export async function deleteDriveFolder(folderId: string): Promise<void> {
   }
 }
 
+export async function getDriveFileParent(fileId: string): Promise<string | null> {
+  const drive = google.drive({ version: 'v3', auth: getAuth() })
+  const res = await drive.files.get({ fileId, fields: 'parents', supportsAllDrives: true })
+  return res.data.parents?.[0] ?? null
+}
+
+export async function moveDriveFolder(fileId: string, newParentId: string, oldParentId: string): Promise<void> {
+  const drive = google.drive({ version: 'v3', auth: getAuth() })
+  await drive.files.update({
+    fileId,
+    supportsAllDrives: true,
+    addParents: newParentId,
+    removeParents: oldParentId,
+    fields: 'id',
+  })
+}
+
 export async function shareWithAnyone(folderId: string): Promise<void> {
   const drive = google.drive({ version: 'v3', auth: getAuth() })
   await drive.permissions.create({

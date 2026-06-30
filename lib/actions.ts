@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createServiceClient } from './supabase'
-import { createDriveFolder, renameDriveFolder, deleteDriveFolder, shareWithAnyone, driveEnabled } from './drive'
+import { createDriveFolder, renameDriveFolder, deleteDriveFolder, moveDriveFolder, getDriveFileParent, shareWithAnyone, driveEnabled } from './drive'
 import type { SetupData, DesignerType } from '@/types'
 
 export async function createEvent(data: SetupData) {
@@ -315,4 +315,40 @@ export async function requestRevision(deliveryId: string, note: string) {
     .eq('id', deliveryId)
   revalidatePath('/director')
   revalidatePath('/designer')
+}
+
+export async function moveTask(taskId: string, newPeriodId: string) {
+  const supabase = createServiceClient()
+  const useDrive = driveEnabled()
+
+  const { data: task } = await supabase
+    .from('led_tasks')
+    .select('*, led_designers(name)')
+    .eq('id', taskId)
+    .single()
+  if (!task) return
+
+  const designer = task.led_designers as any
+
+  const { data: newPeriod } = await supabase
+    .from('led_periods')
+    .select('drive_image_folder_id, drive_video_folder_id')
+    .eq('id', newPeriodId)
+    .single()
+
+  if (useDrive && task.drive_folder_id && newPeriod) {
+    const oldParentId = await getDriveFileParent(task.drive_folder_id)
+    const newPeriodTypeFolderId = task.type === 'image'
+      ? newPeriod.drive_image_folder_id
+      : newPeriod.drive_video_folder_id
+
+    if (newPeriodTypeFolderId && oldParentId) {
+      const designerFolderId = await createDriveFolder(designer.name, newPeriodTypeFolderId)
+      await shareWithAnyone(designerFolderId)
+      await moveDriveFolder(task.drive_folder_id, designerFolderId, oldParentId)
+    }
+  }
+
+  await supabase.from('led_tasks').update({ period_id: newPeriodId }).eq('id', taskId)
+  revalidatePath('/director')
 }
