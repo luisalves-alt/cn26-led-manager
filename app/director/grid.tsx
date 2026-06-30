@@ -85,9 +85,10 @@ interface Props {
   eventName: string
   driveFolderId: string | null
   rows: DirectorRow[]
+  allDayLabels: string[]
 }
 
-export default function DirectorGrid({ eventName, driveFolderId, rows }: Props) {
+export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLabels }: Props) {
   const router = useRouter()
 
   useEffect(() => {
@@ -107,12 +108,10 @@ export default function DirectorGrid({ eventName, driveFolderId, rows }: Props) 
   const revision = rows.filter(r => r.status === 'revision').length
   const pending = rows.filter(r => !r.status || r.status === 'pending').length
 
-  // Group by day
+  // Group by day, preserving order from allDayLabels
   const dayMap = new Map<string, DirectorRow[]>()
-  for (const row of rows) {
-    if (!dayMap.has(row.dayLabel)) dayMap.set(row.dayLabel, [])
-    dayMap.get(row.dayLabel)!.push(row)
-  }
+  for (const label of allDayLabels) dayMap.set(label, [])
+  for (const row of rows) dayMap.get(row.dayLabel)?.push(row)
   const days = Array.from(dayMap.entries())
 
   return (
@@ -163,6 +162,9 @@ export default function DirectorGrid({ eventName, driveFolderId, rows }: Props) 
               </div>
 
               {/* Table */}
+              {dayRows.length === 0 ? (
+                <div className="rounded-xl border border-zinc-800 px-5 py-6 text-sm text-zinc-600">Nenhuma tarefa configurada para este dia.</div>
+              ) : (
               <div className="rounded-xl border border-zinc-800 overflow-hidden">
                 <table className="w-full text-sm border-collapse">
                   <thead>
@@ -199,6 +201,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows }: Props) 
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           )
         })}

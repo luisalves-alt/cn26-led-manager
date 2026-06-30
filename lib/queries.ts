@@ -59,7 +59,8 @@ export async function getDirectorData(eventId: string): Promise<{
     }
   }
 
-  return { eventName: event?.name ?? '', driveFolderId: (event as any)?.drive_folder_id ?? null, rows }
+  const allDayLabels = (days ?? []).map((d) => d.label)
+  return { eventName: event?.name ?? '', driveFolderId: (event as any)?.drive_folder_id ?? null, rows, allDayLabels }
 }
 
 export async function getDesignerData(designerId: string) {

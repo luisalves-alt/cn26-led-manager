@@ -8,7 +8,7 @@ export default async function DirectorPage() {
   const event = await getActiveEvent()
   if (!event) redirect('/setup')
 
-  const { eventName, driveFolderId, rows } = await getDirectorData(event.id)
+  const { eventName, driveFolderId, rows, allDayLabels } = await getDirectorData(event.id)
 
-  return <DirectorGrid eventName={eventName} driveFolderId={driveFolderId} rows={rows} />
+  return <DirectorGrid eventName={eventName} driveFolderId={driveFolderId} rows={rows} allDayLabels={allDayLabels} />
 }
