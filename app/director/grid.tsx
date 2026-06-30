@@ -92,6 +92,15 @@ function MoveTaskButton({ taskId, currentPeriodId, periods }: {
   const others = periods.filter(p => p.id !== currentPeriodId)
   if (others.length === 0) return null
 
+  if (pending) {
+    return (
+      <svg className="animate-spin h-3.5 w-3.5 text-zinc-500" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+      </svg>
+    )
+  }
+
   return (
     <div className="relative">
       <button type="button" onClick={() => setOpen(o => !o)}
@@ -102,12 +111,12 @@ function MoveTaskButton({ taskId, currentPeriodId, periods }: {
         <div className="absolute right-0 top-6 z-30 bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl py-1 min-w-[180px]">
           <p className="text-xs text-zinc-500 px-3 py-1.5 border-b border-zinc-800">Mover para…</p>
           {others.map(p => (
-            <button key={p.id} type="button" disabled={pending}
+            <button key={p.id} type="button"
               onClick={() => startTransition(async () => {
                 await moveTask(taskId, p.id)
                 setOpen(false)
               })}
-              className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 transition-colors disabled:opacity-50">
+              className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-800 transition-colors">
               <span className="text-zinc-500">{p.dayLabel} · </span>{p.label}
             </button>
           ))}
