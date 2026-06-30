@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
 import { markApproved, requestRevision } from '@/lib/actions'
@@ -31,6 +31,7 @@ function StatusBadge({ status }: { status: DeliveryStatus | null }) {
 function RowActions({ row }: { row: DirectorRow }) {
   const [revising, setRevising] = useState(false)
   const [note, setNote] = useState('')
+  const [pending, startTransition] = useTransition()
 
   if (row.status === 'revision' && row.revisionNote && !revising) {
     return <p className="text-xs text-orange-300/70 italic max-w-xs">{row.revisionNote}</p>
@@ -47,12 +48,17 @@ function RowActions({ row }: { row: DirectorRow }) {
           placeholder="O que mudar?"
           className="w-40 text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 outline-none focus:border-zinc-500"
         />
-        <form action={requestRevision.bind(null, row.deliveryId!, note)}>
-          <button type="submit" onClick={() => setRevising(false)}
-            className="text-xs px-3 py-1.5 bg-orange-600 hover:bg-orange-500 rounded-lg font-medium transition-colors">
-            Enviar
-          </button>
-        </form>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => startTransition(async () => {
+            await requestRevision(row.deliveryId!, note)
+            setRevising(false)
+            setNote('')
+          })}
+          className="text-xs px-3 py-1.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 rounded-lg font-medium transition-colors">
+          {pending ? '...' : 'Enviar'}
+        </button>
         <button type="button" onClick={() => { setRevising(false); setNote('') }}
           className="text-xs px-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors">×</button>
       </div>
