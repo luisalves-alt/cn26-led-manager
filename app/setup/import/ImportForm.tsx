@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { createEvent } from '@/lib/actions'
 import type { SetupData, SetupDay, SetupPeriod, SetupDesignerSlot, SetupTask, DesignerType } from '@/types'
+import * as XLSX from 'xlsx'
 
 const DAY_WORDS_NORMALIZED = ['SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA', 'SABADO', 'DOMINGO']
 const DAY_WORDS_DISPLAY   = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
@@ -60,17 +61,14 @@ interface ParsedTask {
   designer: string
 }
 
-function parseCSV(text: string): SetupData {
-  const lines = text.split(/\r?\n/).filter(l => l.trim())
-  const sep = lines[0].includes(';') ? ';' : ','
+function parseRows(matrix: string[][]): SetupData {
+  // Find header row
+  const headerIdx = matrix.findIndex(row =>
+    row.some(c => norm(c).includes('TIPO')) && row.some(c => norm(c).includes('ITEM'))
+  )
+  if (headerIdx < 0) throw new Error('Cabeçalho não encontrado. O ficheiro precisa de colunas: TIPO, ITEM, PROGRAMAÇÃO, RESPONSÁVEL.')
 
-  const headerIdx = lines.findIndex(l => {
-    const u = norm(l)
-    return u.includes('TIPO') && (u.includes('ITEM') || u.includes('PROGRAMA'))
-  })
-  if (headerIdx < 0) throw new Error('Cabeçalho não encontrado. Certifica-te que o CSV tem colunas TIPO, ITEM, PROGRAMAÇÃO, RESPONSÁVEL.')
-
-  const headers = parseCSVLine(lines[headerIdx], sep).map(h => norm(h))
+  const headers = matrix[headerIdx].map(h => norm(h))
   const col = (keyword: string) => headers.findIndex(h => h.includes(keyword))
 
   const cTipo = col('TIPO')
@@ -79,14 +77,14 @@ function parseCSV(text: string): SetupData {
   const cResp = col('RESPONS')
 
   if ([cTipo, cItem, cProg, cResp].some(c => c < 0)) {
-    throw new Error('Colunas em falta. O CSV precisa de: TIPO, ITEM, PROGRAMAÇÃO, RESPONSÁVEL')
+    throw new Error('Colunas em falta. O ficheiro precisa de: TIPO, ITEM, PROGRAMAÇÃO, RESPONSÁVEL')
   }
 
   const tasks: ParsedTask[] = []
   const designerSet = new LinkedSet<string>()
 
-  for (let i = headerIdx + 1; i < lines.length; i++) {
-    const cols = parseCSVLine(lines[i], sep)
+  for (let i = headerIdx + 1; i < matrix.length; i++) {
+    const cols = matrix[i]
     const item = cols[cItem]?.trim()
     const prog = cols[cProg]?.trim()
     const resp = cols[cResp]?.trim()
@@ -133,6 +131,20 @@ function parseCSV(text: string): SetupData {
   return { eventName: 'CN26 | Pré Convenção', designers, schedule }
 }
 
+function csvToMatrix(text: string): string[][] {
+  const sep = text.includes(';') ? ';' : ','
+  return text.split(/\r?\n/)
+    .filter(l => l.trim())
+    .map(l => parseCSVLine(l, sep))
+}
+
+function xlsToMatrix(buffer: ArrayBuffer): string[][] {
+  const wb = XLSX.read(buffer, { type: 'array' })
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  const aoa: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+  return aoa.map(row => row.map((c: any) => String(c ?? '').trim()))
+}
+
 // Ordered Set helper
 class LinkedSet<T> {
   private items: T[] = []
@@ -159,11 +171,15 @@ export default function ImportForm() {
   function handleFile(file: File) {
     setError(null)
     setSummary(null)
+    const isExcel = /\.(xlsx|xls|ods)$/i.test(file.name)
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
-        const text = e.target?.result as string
-        const data = parseCSV(text)
+        const result = e.target?.result!
+        const matrix = isExcel
+          ? xlsToMatrix(result as ArrayBuffer)
+          : csvToMatrix(result as string)
+        const data = parseRows(matrix)
         const periodCount = data.schedule.reduce((acc, d) => acc + d.periods.length, 0)
         const taskCount = data.schedule.reduce((acc, d) =>
           acc + d.periods.reduce((a, p) =>
@@ -174,7 +190,8 @@ export default function ImportForm() {
         setError(err.message)
       }
     }
-    reader.readAsText(file, 'UTF-8')
+    if (isExcel) reader.readAsArrayBuffer(file)
+    else reader.readAsText(file, 'UTF-8')
   }
 
   async function handleImport() {
@@ -206,8 +223,8 @@ export default function ImportForm() {
           >
             <p className="text-4xl mb-4">📄</p>
             <p className="text-zinc-300 font-medium">Arrasta o CSV aqui ou clica para escolher</p>
-            <p className="text-zinc-600 text-sm mt-1">.csv exportado do Excel ou Google Sheets</p>
-            <input ref={inputRef} type="file" accept=".csv,.txt" className="hidden"
+            <p className="text-zinc-600 text-sm mt-1">.csv · .xlsx · .xls</p>
+            <input ref={inputRef} type="file" accept=".csv,.txt,.xlsx,.xls,.ods" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
           </div>
         )}
