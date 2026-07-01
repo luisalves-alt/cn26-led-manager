@@ -119,6 +119,19 @@ export default function SetupForm({ eventId, initial }: Props) {
     }))
   }
 
+  function updateTaskDeadline(dayIdx: number, periodIdx: number, slotIdx: number, taskIdx: number, deadline: string) {
+    setSchedule(schedule.map((d, i) => i !== dayIdx ? d : {
+      ...d,
+      periods: d.periods.map((p, pi) => pi !== periodIdx ? p : {
+        ...p,
+        designerSlots: p.designerSlots.map((s, si) => si !== slotIdx ? s : {
+          ...s,
+          tasks: s.tasks.map((t, ti) => ti !== taskIdx ? t : { ...t, deadline: deadline || undefined }),
+        }),
+      }),
+    }))
+  }
+
   function updateTaskName(dayIdx: number, periodIdx: number, slotIdx: number, taskIdx: number, name: string) {
     setSchedule(schedule.map((d, i) => i !== dayIdx ? d : {
       ...d,
@@ -260,6 +273,9 @@ export default function SetupForm({ eventId, initial }: Props) {
                                 <input value={task.name}
                                   onChange={(e) => updateTaskName(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
                                   className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-600 text-zinc-300" />
+                                <input type="date" value={task.deadline ?? ''}
+                                  onChange={(e) => updateTaskDeadline(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
+                                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-sm outline-none focus:border-zinc-600 text-zinc-400 w-36" />
                                 <button type="button" onClick={() => removeTask(dayIdx, periodIdx, slotIdx, taskIdx)}
                                   className="text-zinc-600 hover:text-zinc-400 text-lg leading-none transition-colors">×</button>
                               </div>

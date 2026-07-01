@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { getDesignerData } from '@/lib/queries'
-import { markDelivered } from '@/lib/actions'
+import { markDelivered, cancelDelivery } from '@/lib/actions'
 import { driveUrl } from '@/lib/drive'
 
 export default async function DesignerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -70,6 +70,11 @@ export default async function DesignerPage({ params }: { params: Promise<{ id: s
                                 </a>
                               )}
                             </div>
+                            {item.deadline && (
+                              <p className="text-xs text-zinc-500 mt-0.5">
+                                Prazo: {new Date(item.deadline + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                              </p>
+                            )}
                             {item.revisionNote && item.status === 'revision' && (
                               <p className="text-xs text-orange-300/70 italic mt-1">{item.revisionNote}</p>
                             )}
@@ -81,6 +86,14 @@ export default async function DesignerPage({ params }: { params: Promise<{ id: s
                                 <button type="submit"
                                   className="text-xs px-3 py-1.5 rounded-xl bg-white text-black font-medium hover:bg-zinc-200 transition-colors whitespace-nowrap">
                                   Entregar
+                                </button>
+                              </form>
+                            )}
+                            {item.status === 'delivered' && (
+                              <form action={cancelDelivery.bind(null, item.taskId)}>
+                                <button type="submit"
+                                  className="text-xs px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors whitespace-nowrap">
+                                  Cancelar
                                 </button>
                               </form>
                             )}

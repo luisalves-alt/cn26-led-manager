@@ -15,6 +15,7 @@ export interface SetupTask {
   localId: string
   dbId?: string
   name: string
+  deadline?: string
 }
 
 export interface SetupDesignerSlot {
@@ -53,6 +54,7 @@ export interface DirectorRow {
   taskType: DesignerType
   taskId: string
   taskName: string
+  deadline: string | null
   deliveryId: string | null
   status: DeliveryStatus | null
   revisionNote: string | null

@@ -87,6 +87,7 @@ export async function createEvent(data: SetupData) {
               name: task.name,
               order_index: ti,
               drive_folder_id: taskFolderId ?? null,
+              deadline: task.deadline ?? null,
             })
             .select()
             .single()
@@ -259,7 +260,7 @@ export async function updateEvent(eventId: string, data: SetupData) {
         for (let ti = 0; ti < slot.tasks.length; ti++) {
           const task = slot.tasks[ti]
           if (task.dbId && existingTaskIds.has(task.dbId)) {
-            await supabase.from('led_tasks').update({ name: task.name, order_index: ti }).eq('id', task.dbId)
+            await supabase.from('led_tasks').update({ name: task.name, order_index: ti, deadline: task.deadline ?? null }).eq('id', task.dbId)
           } else {
             let taskFolderId: string | undefined
             if (useDrive && designerFolderId) {
@@ -275,6 +276,7 @@ export async function updateEvent(eventId: string, data: SetupData) {
                 name: task.name,
                 order_index: ti,
                 drive_folder_id: taskFolderId ?? null,
+                deadline: task.deadline ?? null,
               })
               .select()
               .single()
@@ -304,6 +306,16 @@ export async function markApproved(deliveryId: string) {
     .from('led_deliveries')
     .update({ status: 'approved', approved_at: new Date().toISOString() })
     .eq('id', deliveryId)
+  revalidatePath('/director')
+}
+
+export async function cancelDelivery(taskId: string) {
+  const supabase = createServiceClient()
+  await supabase
+    .from('led_deliveries')
+    .update({ status: 'pending', delivered_at: null })
+    .eq('task_id', taskId)
+  revalidatePath('/designer')
   revalidatePath('/director')
 }
 

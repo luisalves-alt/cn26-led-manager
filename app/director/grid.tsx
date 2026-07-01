@@ -239,7 +239,14 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                               : <span className="text-xs font-medium text-purple-400 bg-purple-500/10 px-2 py-1 rounded-md">🎬 Vídeo</span>}
                           </td>
                           <td className="px-5 py-4 text-zinc-300 text-sm align-middle font-medium">{row.designerName}</td>
-                          <td className="px-5 py-4 text-zinc-200 text-sm align-middle">{row.taskName}</td>
+                          <td className="px-5 py-4 text-zinc-200 text-sm align-middle">
+                            <span>{row.taskName}</span>
+                            {row.deadline && (
+                              <span className="ml-2 text-xs text-zinc-500">
+                                {new Date(row.deadline + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                              </span>
+                            )}
+                          </td>
                           <td className="px-5 py-4 align-middle"><StatusBadge status={row.status} /></td>
                           <td className="px-5 py-4 align-middle"><RowActions row={row} /></td>
                           <td className="px-3 py-4 align-middle">
