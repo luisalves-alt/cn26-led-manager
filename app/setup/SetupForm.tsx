@@ -83,15 +83,29 @@ export default function SetupForm({ eventId, initial }: Props) {
     }))
   }
 
-  function toggleSlotType(dayIdx: number, periodIdx: number, slotIdx: number) {
+  function changeTaskType(dayIdx: number, periodIdx: number, slotIdx: number, taskIdx: number, newType: DesignerType) {
     setSchedule(schedule.map((d, i) => i !== dayIdx ? d : {
       ...d,
       periods: d.periods.map((p, pi) => pi !== periodIdx ? p : {
         ...p,
-        designerSlots: p.designerSlots.map((s, si) => si !== slotIdx
-          ? s
-          : { ...s, type: s.type === 'image' ? 'video' : 'image' }
-        ),
+        designerSlots: (() => {
+          const slots = p.designerSlots.map(s => ({ ...s, tasks: [...s.tasks] }))
+          const slot = slots[slotIdx]
+          const task = slot.tasks[taskIdx]
+
+          // Remove from current slot
+          slot.tasks = slot.tasks.filter((_, ti) => ti !== taskIdx)
+
+          // Find or create target slot for same designer + new type
+          const targetIdx = slots.findIndex((s, si) => si !== slotIdx && s.designerIndex === slot.designerIndex && s.type === newType)
+          if (targetIdx >= 0) {
+            slots[targetIdx].tasks = [...slots[targetIdx].tasks, task]
+          } else {
+            slots.push({ designerIndex: slot.designerIndex, type: newType, tasks: [task] })
+          }
+
+          return slots.filter(s => s.tasks.length > 0)
+        })(),
       }),
     }))
   }
@@ -260,16 +274,15 @@ export default function SetupForm({ eventId, initial }: Props) {
                         return (
                           <div key={`img-${slot.designerIndex}`} className="pl-4 border-l-2 border-blue-500/30 space-y-2">
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-base font-medium text-blue-300">{designer?.name}</span>
-                                <button type="button" onClick={() => toggleSlotType(dayIdx, periodIdx, slotIdx)}
-                                  className="text-xs text-blue-500/60 hover:text-purple-400 transition-colors" title="Mudar para Vídeo">→ 🎬</button>
-                              </div>
+                              <span className="text-base font-medium text-blue-300">{designer?.name}</span>
                               <button type="button" onClick={() => removeDesignerSlot(dayIdx, periodIdx, slotIdx)}
                                 className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">remover</button>
                             </div>
                             {slot.tasks.map((task, taskIdx) => (
                               <div key={task.localId} className="flex items-center gap-2 pl-2">
+                                <button type="button" title="Mudar para Vídeo"
+                                  onClick={() => changeTaskType(dayIdx, periodIdx, slotIdx, taskIdx, 'video')}
+                                  className="text-xs text-blue-400/70 hover:text-purple-400 transition-colors shrink-0">🖼️</button>
                                 <input value={task.name}
                                   onChange={(e) => updateTaskName(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
                                   className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-600 text-zinc-300" />
@@ -305,19 +318,21 @@ export default function SetupForm({ eventId, initial }: Props) {
                         return (
                           <div key={`vid-${slot.designerIndex}`} className="pl-4 border-l-2 border-purple-500/30 space-y-2">
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="text-base font-medium text-purple-300">{designer?.name}</span>
-                                <button type="button" onClick={() => toggleSlotType(dayIdx, periodIdx, slotIdx)}
-                                  className="text-xs text-purple-500/60 hover:text-blue-400 transition-colors" title="Mudar para Imagem">→ 🖼️</button>
-                              </div>
+                              <span className="text-base font-medium text-purple-300">{designer?.name}</span>
                               <button type="button" onClick={() => removeDesignerSlot(dayIdx, periodIdx, slotIdx)}
                                 className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">remover</button>
                             </div>
                             {slot.tasks.map((task, taskIdx) => (
                               <div key={task.localId} className="flex items-center gap-2 pl-2">
+                                <button type="button" title="Mudar para Imagem"
+                                  onClick={() => changeTaskType(dayIdx, periodIdx, slotIdx, taskIdx, 'image')}
+                                  className="text-xs text-purple-400/70 hover:text-blue-400 transition-colors shrink-0">🎬</button>
                                 <input value={task.name}
                                   onChange={(e) => updateTaskName(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
                                   className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-600 text-zinc-300" />
+                                <input type="date" value={task.deadline ?? ''}
+                                  onChange={(e) => updateTaskDeadline(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
+                                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-sm outline-none focus:border-zinc-600 text-zinc-400 w-36" />
                                 <button type="button" onClick={() => removeTask(dayIdx, periodIdx, slotIdx, taskIdx)}
                                   className="text-zinc-600 hover:text-zinc-400 text-lg leading-none transition-colors">×</button>
                               </div>
