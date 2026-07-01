@@ -83,6 +83,19 @@ export default function SetupForm({ eventId, initial }: Props) {
     }))
   }
 
+  function toggleSlotType(dayIdx: number, periodIdx: number, slotIdx: number) {
+    setSchedule(schedule.map((d, i) => i !== dayIdx ? d : {
+      ...d,
+      periods: d.periods.map((p, pi) => pi !== periodIdx ? p : {
+        ...p,
+        designerSlots: p.designerSlots.map((s, si) => si !== slotIdx
+          ? s
+          : { ...s, type: s.type === 'image' ? 'video' : 'image' }
+        ),
+      }),
+    }))
+  }
+
   function removeDesignerSlot(dayIdx: number, periodIdx: number, slotIdx: number) {
     setSchedule(schedule.map((d, i) => i !== dayIdx ? d : {
       ...d,
@@ -234,7 +247,11 @@ export default function SetupForm({ eventId, initial }: Props) {
                         return (
                           <div key={`img-${slot.designerIndex}`} className="pl-4 border-l-2 border-blue-500/30 space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-base font-medium text-blue-300">{designer?.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-medium text-blue-300">{designer?.name}</span>
+                                <button type="button" onClick={() => toggleSlotType(dayIdx, periodIdx, slotIdx)}
+                                  className="text-xs text-blue-500/60 hover:text-purple-400 transition-colors" title="Mudar para Vídeo">→ 🎬</button>
+                              </div>
                               <button type="button" onClick={() => removeDesignerSlot(dayIdx, periodIdx, slotIdx)}
                                 className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">remover</button>
                             </div>
@@ -272,7 +289,11 @@ export default function SetupForm({ eventId, initial }: Props) {
                         return (
                           <div key={`vid-${slot.designerIndex}`} className="pl-4 border-l-2 border-purple-500/30 space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-base font-medium text-purple-300">{designer?.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-medium text-purple-300">{designer?.name}</span>
+                                <button type="button" onClick={() => toggleSlotType(dayIdx, periodIdx, slotIdx)}
+                                  className="text-xs text-purple-500/60 hover:text-blue-400 transition-colors" title="Mudar para Imagem">→ 🖼️</button>
+                              </div>
                               <button type="button" onClick={() => removeDesignerSlot(dayIdx, periodIdx, slotIdx)}
                                 className="text-zinc-600 hover:text-zinc-400 text-sm transition-colors">remover</button>
                             </div>
