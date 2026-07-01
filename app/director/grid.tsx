@@ -246,6 +246,9 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                                 {new Date(row.deadline + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                               </span>
                             )}
+                            {row.notes && (
+                              <p className="text-xs text-zinc-600 italic mt-0.5">{row.notes}</p>
+                            )}
                           </td>
                           <td className="px-5 py-4 align-middle"><StatusBadge status={row.status} /></td>
                           <td className="px-5 py-4 align-middle"><RowActions row={row} /></td>

@@ -88,6 +88,7 @@ export async function createEvent(data: SetupData) {
               order_index: ti,
               drive_folder_id: taskFolderId ?? null,
               deadline: task.deadline ?? null,
+              notes: task.notes ?? null,
             })
             .select()
             .single()
@@ -260,7 +261,7 @@ export async function updateEvent(eventId: string, data: SetupData) {
         for (let ti = 0; ti < slot.tasks.length; ti++) {
           const task = slot.tasks[ti]
           if (task.dbId && existingTaskIds.has(task.dbId)) {
-            await supabase.from('led_tasks').update({ name: task.name, order_index: ti, deadline: task.deadline ?? null }).eq('id', task.dbId)
+            await supabase.from('led_tasks').update({ name: task.name, order_index: ti, deadline: task.deadline ?? null, notes: task.notes ?? null }).eq('id', task.dbId)
           } else {
             let taskFolderId: string | undefined
             if (useDrive && designerFolderId) {
@@ -277,6 +278,7 @@ export async function updateEvent(eventId: string, data: SetupData) {
                 order_index: ti,
                 drive_folder_id: taskFolderId ?? null,
                 deadline: task.deadline ?? null,
+                notes: task.notes ?? null,
               })
               .select()
               .single()

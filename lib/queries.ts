@@ -58,6 +58,7 @@ export async function getDirectorData(eventId: string): Promise<{
           taskId: task.id,
           taskName: task.name,
           deadline: task.deadline ?? null,
+          notes: task.notes ?? null,
           deliveryId: delivery?.id ?? null,
           status: delivery?.status ?? null,
           revisionNote: delivery?.revision_note ?? null,
@@ -96,6 +97,7 @@ export async function getDesignerData(designerId: string) {
         taskType: (task.type ?? 'image') as DesignerType,
         driveFolderId: task.drive_folder_id ?? null,
         deadline: task.deadline ?? null,
+        notes: task.notes ?? null,
         deliveryId: delivery?.id ?? null,
         status: (delivery?.status ?? 'pending') as string,
         revisionNote: delivery?.revision_note ?? null,
@@ -148,7 +150,7 @@ export async function getEventForEdit(eventId: string): Promise<SetupData> {
         if (!slotMap.has(key)) {
           slotMap.set(key, { designerIndex, type: (task.type ?? 'image') as DesignerType, tasks: [] })
         }
-        slotMap.get(key)!.tasks.push({ localId: task.id, dbId: task.id, name: task.name, deadline: task.deadline ?? undefined })
+        slotMap.get(key)!.tasks.push({ localId: task.id, dbId: task.id, name: task.name, deadline: task.deadline ?? undefined, notes: task.notes ?? undefined })
       }
 
       const designerSlots: SetupDesignerSlot[] = Array.from(slotMap.values())

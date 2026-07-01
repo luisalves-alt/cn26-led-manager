@@ -75,6 +75,9 @@ export default async function DesignerPage({ params }: { params: Promise<{ id: s
                                 Prazo: {new Date(item.deadline + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                               </p>
                             )}
+                            {item.notes && (
+                              <p className="text-xs text-zinc-500 mt-0.5 italic">{item.notes}</p>
+                            )}
                             {item.revisionNote && item.status === 'revision' && (
                               <p className="text-xs text-orange-300/70 italic mt-1">{item.revisionNote}</p>
                             )}

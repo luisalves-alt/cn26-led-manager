@@ -133,6 +133,19 @@ export default function SetupForm({ eventId, initial }: Props) {
     }))
   }
 
+  function updateTaskNotes(dayIdx: number, periodIdx: number, slotIdx: number, taskIdx: number, notes: string) {
+    setSchedule(schedule.map((d, i) => i !== dayIdx ? d : {
+      ...d,
+      periods: d.periods.map((p, pi) => pi !== periodIdx ? p : {
+        ...p,
+        designerSlots: p.designerSlots.map((s, si) => si !== slotIdx ? s : {
+          ...s,
+          tasks: s.tasks.map((t, ti) => ti !== taskIdx ? t : { ...t, notes: notes || undefined }),
+        }),
+      }),
+    }))
+  }
+
   function updateTaskDeadline(dayIdx: number, periodIdx: number, slotIdx: number, taskIdx: number, deadline: string) {
     setSchedule(schedule.map((d, i) => i !== dayIdx ? d : {
       ...d,
@@ -283,9 +296,15 @@ export default function SetupForm({ eventId, initial }: Props) {
                                 <button type="button" title="Mudar para Vídeo"
                                   onClick={() => changeTaskType(dayIdx, periodIdx, slotIdx, taskIdx, 'video')}
                                   className="text-xs text-blue-400/70 hover:text-purple-400 transition-colors shrink-0">🖼️</button>
-                                <input value={task.name}
-                                  onChange={(e) => updateTaskName(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
-                                  className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-600 text-zinc-300" />
+                                <div className="flex-1 space-y-1">
+                                  <input value={task.name}
+                                    onChange={(e) => updateTaskName(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-600 text-zinc-300" />
+                                  <input value={task.notes ?? ''}
+                                    onChange={(e) => updateTaskNotes(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
+                                    placeholder="Observações..."
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-zinc-600 text-zinc-500 placeholder:text-zinc-700" />
+                                </div>
                                 <input type="date" value={task.deadline ?? ''}
                                   onChange={(e) => updateTaskDeadline(dayIdx, periodIdx, slotIdx, taskIdx, e.target.value)}
                                   className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-2 text-sm outline-none focus:border-zinc-600 text-zinc-400 w-36" />
