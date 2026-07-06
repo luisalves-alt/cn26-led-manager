@@ -2,9 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { getDesignerData } from '@/lib/queries'
-import { cancelDelivery } from '@/lib/actions'
+import { markDelivered, cancelDelivery } from '@/lib/actions'
 import { driveUrl } from '@/lib/drive'
-import DeliverButton from './DeliverButton'
 
 export default async function DesignerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -82,17 +81,16 @@ export default async function DesignerPage({ params }: { params: Promise<{ id: s
                             {item.revisionNote && item.status === 'revision' && (
                               <p className="text-xs text-orange-300/70 italic mt-1">{item.revisionNote}</p>
                             )}
-                            {(item as any).deliveryUrl && (
-                              <a href={(item as any).deliveryUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-xs text-blue-400 hover:text-blue-300 transition-colors mt-0.5 block truncate max-w-[200px]">
-                                Link entregue ↗
-                              </a>
-                            )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <StatusBadge status={item.status} />
                             {(item.status === 'pending' || item.status === 'revision') && (
-                              <DeliverButton taskId={item.taskId} />
+                              <form action={markDelivered.bind(null, item.taskId)}>
+                                <button type="submit"
+                                  className="text-xs px-3 py-1.5 rounded-xl bg-white text-black font-medium hover:bg-zinc-200 transition-colors whitespace-nowrap">
+                                  Entregar
+                                </button>
+                              </form>
                             )}
                             {item.status === 'delivered' && (
                               <form action={cancelDelivery.bind(null, item.taskId)}>

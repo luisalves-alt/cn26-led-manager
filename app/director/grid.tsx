@@ -254,10 +254,10 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                           <td className="px-5 py-4 align-middle">
                             <div className="flex items-center gap-3">
                               <RowActions row={row} />
-                              {row.deliveryUrl && (
-                                <a href={row.deliveryUrl} target="_blank" rel="noopener noreferrer"
-                                  className="text-xs px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg font-medium transition-colors whitespace-nowrap">
-                                  Ver entrega ↗
+                              {row.driveFolderId && (
+                                <a href={driveUrl(row.driveFolderId)} target="_blank" rel="noopener noreferrer"
+                                  className="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400 rounded-lg font-medium transition-colors whitespace-nowrap">
+                                  Pasta ↗
                                 </a>
                               )}
                             </div>

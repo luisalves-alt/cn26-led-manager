@@ -57,8 +57,8 @@ export interface DirectorRow {
   taskName: string
   deadline: string | null
   notes: string | null
+  driveFolderId: string | null
   deliveryId: string | null
   status: DeliveryStatus | null
   revisionNote: string | null
-  deliveryUrl: string | null
 }
