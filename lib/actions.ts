@@ -292,11 +292,15 @@ export async function updateEvent(eventId: string, data: SetupData) {
   redirect('/director')
 }
 
-export async function markDelivered(taskId: string) {
+export async function markDelivered(taskId: string, deliveryUrl?: string) {
   const supabase = createServiceClient()
   await supabase
     .from('led_deliveries')
-    .update({ status: 'delivered', delivered_at: new Date().toISOString() })
+    .update({
+      status: 'delivered',
+      delivered_at: new Date().toISOString(),
+      delivery_url: deliveryUrl?.trim() || null,
+    })
     .eq('task_id', taskId)
   revalidatePath('/designer')
   revalidatePath('/director')

@@ -62,6 +62,7 @@ export async function getDirectorData(eventId: string): Promise<{
           deliveryId: delivery?.id ?? null,
           status: delivery?.status ?? null,
           revisionNote: delivery?.revision_note ?? null,
+          deliveryUrl: delivery?.delivery_url ?? null,
         })
       }
     }
@@ -101,6 +102,7 @@ export async function getDesignerData(designerId: string) {
         deliveryId: delivery?.id ?? null,
         status: (delivery?.status ?? 'pending') as string,
         revisionNote: delivery?.revision_note ?? null,
+        deliveryUrl: delivery?.delivery_url ?? null,
         dayNumber: day?.number ?? 0,
         dayLabel: day?.label ?? '',
         periodLabel: period?.label ?? '',
