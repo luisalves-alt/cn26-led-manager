@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
-import { markApproved, requestRevision, moveTask } from '@/lib/actions'
+import { markApproved, requestRevision, moveTask, toggleStorage } from '@/lib/actions'
 import type { DirectorRow, DeliveryStatus } from '@/types'
 
 function driveUrl(id: string) {
@@ -25,6 +25,35 @@ function StatusBadge({ status }: { status: DeliveryStatus | null }) {
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {s.label}
     </span>
+  )
+}
+
+function StorageToggle({ row }: { row: DirectorRow }) {
+  const [on, setOn] = useState(row.onStorage)
+  const [pending, startTransition] = useTransition()
+
+  if (!row.deliveryId) return null
+
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      title={on ? 'No HD/SSD — clique para remover' : 'Clique para marcar como no HD/SSD'}
+      onClick={() => {
+        setOn(v => !v)
+        startTransition(async () => {
+          await toggleStorage(row.deliveryId!, on)
+        })
+      }}
+      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+        on
+          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+          : 'bg-zinc-800/60 border-zinc-700 text-zinc-600 hover:text-zinc-400 hover:border-zinc-600'
+      }`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${on ? 'bg-emerald-400' : 'bg-zinc-600'}`} />
+      HD
+    </button>
   )
 }
 
@@ -220,6 +249,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                       <th className="text-left px-5 py-3 font-medium w-36">Designer</th>
                       <th className="text-left px-5 py-3 font-medium">Tarefa</th>
                       <th className="text-left px-5 py-3 font-medium w-32">Status</th>
+                      <th className="text-left px-5 py-3 font-medium w-20">HD/SSD</th>
                       <th className="text-left px-5 py-3 font-medium w-56"></th>
                       <th className="px-3 py-3 w-10"></th>
                     </tr>
@@ -251,6 +281,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                             )}
                           </td>
                           <td className="px-5 py-4 align-middle"><StatusBadge status={row.status} /></td>
+                          <td className="px-5 py-4 align-middle"><StorageToggle row={row} /></td>
                           <td className="px-5 py-4 align-middle">
                             <div className="flex items-center gap-3">
                               <RowActions row={row} />

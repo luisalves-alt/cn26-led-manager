@@ -63,6 +63,7 @@ export async function getDirectorData(eventId: string): Promise<{
           deliveryId: delivery?.id ?? null,
           status: delivery?.status ?? null,
           revisionNote: delivery?.revision_note ?? null,
+          onStorage: delivery?.on_storage ?? false,
         })
       }
     }

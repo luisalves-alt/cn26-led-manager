@@ -331,6 +331,15 @@ export async function requestRevision(deliveryId: string, note: string) {
   revalidatePath('/designer')
 }
 
+export async function toggleStorage(deliveryId: string, current: boolean) {
+  const supabase = createServiceClient()
+  await supabase
+    .from('led_deliveries')
+    .update({ on_storage: !current })
+    .eq('id', deliveryId)
+  revalidatePath('/director')
+}
+
 export async function moveTask(taskId: string, newPeriodId: string) {
   const supabase = createServiceClient()
   const useDrive = driveEnabled()

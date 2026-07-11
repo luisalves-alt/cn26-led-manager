@@ -61,4 +61,5 @@ export interface DirectorRow {
   deliveryId: string | null
   status: DeliveryStatus | null
   revisionNote: string | null
+  onStorage: boolean
 }
