@@ -77,6 +77,10 @@ export async function createEvent(data: SetupData) {
           if (useDrive && designerFolderId) {
             taskFolderId = await createDriveFolder(task.name, designerFolderId)
             await shareWithAnyone(taskFolderId)
+            if (slot.type === 'video') {
+              const brutasFolderId = await createDriveFolder('BRUTAS', taskFolderId)
+              await shareWithAnyone(brutasFolderId)
+            }
           }
           const { data: taskRow, error: taskErr } = await supabase
             .from('led_tasks')
@@ -267,6 +271,10 @@ export async function updateEvent(eventId: string, data: SetupData) {
             if (useDrive && designerFolderId) {
               taskFolderId = await createDriveFolder(task.name, designerFolderId)
               await shareWithAnyone(taskFolderId)
+              if (slot.type === 'video') {
+                const brutasFolderId = await createDriveFolder('BRUTAS', taskFolderId)
+                await shareWithAnyone(brutasFolderId)
+              }
             }
             const { data: newTask } = await supabase
               .from('led_tasks')
