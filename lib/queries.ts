@@ -17,12 +17,14 @@ export async function getDirectorData(eventId: string): Promise<{
   rows: DirectorRow[]
   allDayLabels: string[]
   periods: { id: string; label: string; dayLabel: string }[]
+  designers: { id: string; name: string }[]
 }> {
   const supabase = createServiceClient()
 
-  const [{ data: event }, { data: days }] = await Promise.all([
+  const [{ data: event }, { data: days }, { data: designers }] = await Promise.all([
     supabase.from('led_events').select('name, drive_folder_id').eq('id', eventId).single(),
     supabase.from('led_days').select('*').eq('event_id', eventId).order('number'),
+    supabase.from('led_designers').select('id, name').eq('event_id', eventId).order('name'),
   ])
 
   const rows: DirectorRow[] = []
@@ -53,6 +55,7 @@ export async function getDirectorData(eventId: string): Promise<{
           dayLabel: day.label,
           periodId: period.id,
           periodLabel: period.label,
+          designerId: designer?.id ?? '',
           designerName: designer?.name ?? '',
           taskType: (task.type ?? 'image') as DesignerType,
           taskId: task.id,
@@ -70,7 +73,7 @@ export async function getDirectorData(eventId: string): Promise<{
   }
 
   const allDayLabels = (days ?? []).map((d) => d.label)
-  return { eventName: event?.name ?? '', driveFolderId: (event as any)?.drive_folder_id ?? null, rows, allDayLabels, periods }
+  return { eventName: event?.name ?? '', driveFolderId: (event as any)?.drive_folder_id ?? null, rows, allDayLabels, periods, designers: designers ?? [] }
 }
 
 export async function getDesignerData(designerId: string) {

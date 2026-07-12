@@ -51,6 +51,7 @@ export interface DirectorRow {
   dayLabel: string
   periodId: string
   periodLabel: string
+  designerId: string
   designerName: string
   taskType: DesignerType
   taskId: string

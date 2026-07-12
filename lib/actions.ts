@@ -342,13 +342,14 @@ export async function requestRevision(deliveryId: string, note: string) {
 export async function updateTask(taskId: string, data: {
   name: string
   type: 'image' | 'video'
+  designerId: string
   deadline: string | null
   notes: string | null
 }) {
   const supabase = createServiceClient()
   await supabase
     .from('led_tasks')
-    .update({ name: data.name, type: data.type, deadline: data.deadline || null, notes: data.notes || null })
+    .update({ name: data.name, type: data.type, designer_id: data.designerId, deadline: data.deadline || null, notes: data.notes || null })
     .eq('id', taskId)
   revalidatePath('/director')
 }

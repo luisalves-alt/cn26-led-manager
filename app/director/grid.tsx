@@ -28,16 +28,21 @@ function StatusBadge({ status }: { status: DeliveryStatus | null }) {
   )
 }
 
-function EditRow({ row, onClose }: { row: DirectorRow; onClose: () => void }) {
+function EditRow({ row, designers, onClose }: {
+  row: DirectorRow
+  designers: { id: string; name: string }[]
+  onClose: () => void
+}) {
   const [name, setName] = useState(row.taskName)
   const [type, setType] = useState<'image' | 'video'>(row.taskType)
+  const [designerId, setDesignerId] = useState(row.designerId)
   const [deadline, setDeadline] = useState(row.deadline ?? '')
   const [notes, setNotes] = useState(row.notes ?? '')
   const [pending, startTransition] = useTransition()
 
   function handleSave() {
     startTransition(async () => {
-      await updateTask(row.taskId, { name, type, deadline: deadline || null, notes: notes || null })
+      await updateTask(row.taskId, { name, type, designerId, deadline: deadline || null, notes: notes || null })
       onClose()
     })
   }
@@ -63,6 +68,18 @@ function EditRow({ row, onClose }: { row: DirectorRow; onClose: () => void }) {
             >
               <option value="image">🖼️ Imagem</option>
               <option value="video">🎬 Vídeo</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-zinc-500">Designer</label>
+            <select
+              value={designerId}
+              onChange={e => setDesignerId(e.target.value)}
+              className="text-sm bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 outline-none focus:border-zinc-500 text-zinc-200"
+            >
+              {designers.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -237,9 +254,10 @@ interface Props {
   rows: DirectorRow[]
   allDayLabels: string[]
   periods: { id: string; label: string; dayLabel: string }[]
+  designers: { id: string; name: string }[]
 }
 
-export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLabels, periods }: Props) {
+export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLabels, periods, designers }: Props) {
   const router = useRouter()
 
   useEffect(() => {
@@ -388,7 +406,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                             </td>
                           </tr>
                           {isEditing && (
-                            <EditRow row={row} onClose={() => setEditingTaskId(null)} />
+                            <EditRow row={row} designers={designers} onClose={() => setEditingTaskId(null)} />
                           )}
                         </React.Fragment>
                       )
