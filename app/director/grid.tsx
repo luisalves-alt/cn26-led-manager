@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import React, { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@/lib/supabase'
-import { markApproved, requestRevision, moveTask, toggleStorage } from '@/lib/actions'
+import { markApproved, requestRevision, moveTask, toggleStorage, updateTask } from '@/lib/actions'
 import type { DirectorRow, DeliveryStatus } from '@/types'
 
 function driveUrl(id: string) {
@@ -25,6 +25,82 @@ function StatusBadge({ status }: { status: DeliveryStatus | null }) {
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {s.label}
     </span>
+  )
+}
+
+function EditRow({ row, onClose }: { row: DirectorRow; onClose: () => void }) {
+  const [name, setName] = useState(row.taskName)
+  const [type, setType] = useState<'image' | 'video'>(row.taskType)
+  const [deadline, setDeadline] = useState(row.deadline ?? '')
+  const [notes, setNotes] = useState(row.notes ?? '')
+  const [pending, startTransition] = useTransition()
+
+  function handleSave() {
+    startTransition(async () => {
+      await updateTask(row.taskId, { name, type, deadline: deadline || null, notes: notes || null })
+      onClose()
+    })
+  }
+
+  return (
+    <tr className="bg-zinc-900/80 border-b border-zinc-700">
+      <td colSpan={8} className="px-5 py-4">
+        <div className="flex items-end gap-3 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-zinc-500">Nome</label>
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-56 text-sm bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 outline-none focus:border-zinc-500 text-zinc-200"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-zinc-500">Tipo</label>
+            <select
+              value={type}
+              onChange={e => setType(e.target.value as 'image' | 'video')}
+              className="text-sm bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 outline-none focus:border-zinc-500 text-zinc-200"
+            >
+              <option value="image">🖼️ Imagem</option>
+              <option value="video">🎬 Vídeo</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-zinc-500">Prazo</label>
+            <input
+              type="date"
+              value={deadline}
+              onChange={e => setDeadline(e.target.value)}
+              className="text-sm bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 outline-none focus:border-zinc-500 text-zinc-200"
+            />
+          </div>
+          <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
+            <label className="text-xs text-zinc-500">Observação</label>
+            <input
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Observação..."
+              className="w-full text-sm bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 outline-none focus:border-zinc-500 text-zinc-200 placeholder:text-zinc-600"
+            />
+          </div>
+          <div className="flex gap-2 pb-0.5">
+            <button
+              onClick={handleSave}
+              disabled={!name.trim() || pending}
+              className="text-sm px-4 py-1.5 bg-white text-black rounded-lg font-medium disabled:opacity-40 hover:bg-zinc-100 transition-colors"
+            >
+              {pending ? '...' : 'Salvar'}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-sm px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </td>
+    </tr>
   )
 }
 
@@ -177,6 +253,8 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
     return () => { supabase.removeChannel(channel) }
   }, [router])
 
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
+
   const totalTasks = rows.length
   const approved = rows.filter(r => r.status === 'approved').length
   const delivered = rows.filter(r => r.status === 'delivered').length
@@ -258,45 +336,61 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
                     {dayRows.map((row, idx) => {
                       const prevRow = dayRows[idx - 1]
                       const samePeriod = prevRow?.periodLabel === row.periodLabel
+                      const isEditing = editingTaskId === row.taskId
                       return (
-                        <tr key={row.taskId} className="border-b border-zinc-800/40 last:border-0 hover:bg-zinc-900/50 transition-colors">
-                          <td className={`px-5 py-4 text-sm align-middle ${samePeriod ? 'text-zinc-800' : 'text-zinc-400 font-medium'}`}>
-                            {row.periodLabel}
-                          </td>
-                          <td className="px-5 py-4 align-middle">
-                            {row.taskType === 'image'
-                              ? <span className="text-xs font-medium text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md">🖼️ Imagem</span>
-                              : <span className="text-xs font-medium text-purple-400 bg-purple-500/10 px-2 py-1 rounded-md">🎬 Vídeo</span>}
-                          </td>
-                          <td className="px-5 py-4 text-zinc-300 text-sm align-middle font-medium">{row.designerName}</td>
-                          <td className="px-5 py-4 text-zinc-200 text-sm align-middle">
-                            <span>{row.taskName}</span>
-                            {row.deadline && (
-                              <span className="ml-2 text-xs text-zinc-500">
-                                {new Date(row.deadline + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                              </span>
-                            )}
-                            {row.notes && (
-                              <p className="text-xs text-zinc-600 italic mt-0.5">{row.notes}</p>
-                            )}
-                          </td>
-                          <td className="px-5 py-4 align-middle"><StatusBadge status={row.status} /></td>
-                          <td className="px-5 py-4 align-middle"><StorageToggle row={row} /></td>
-                          <td className="px-5 py-4 align-middle">
-                            <div className="flex items-center gap-3">
-                              <RowActions row={row} />
-                              {row.driveFolderId && (
-                                <a href={driveUrl(row.driveFolderId)} target="_blank" rel="noopener noreferrer"
-                                  className="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400 rounded-lg font-medium transition-colors whitespace-nowrap">
-                                  Pasta ↗
-                                </a>
+                        <React.Fragment key={row.taskId}>
+                          <tr className={`border-b border-zinc-800/40 last:border-0 transition-colors ${isEditing ? 'bg-zinc-900/80' : 'hover:bg-zinc-900/50'}`}>
+                            <td className={`px-5 py-4 text-sm align-middle ${samePeriod ? 'text-zinc-800' : 'text-zinc-400 font-medium'}`}>
+                              {row.periodLabel}
+                            </td>
+                            <td className="px-5 py-4 align-middle">
+                              {row.taskType === 'image'
+                                ? <span className="text-xs font-medium text-blue-400 bg-blue-500/10 px-2 py-1 rounded-md">🖼️ Imagem</span>
+                                : <span className="text-xs font-medium text-purple-400 bg-purple-500/10 px-2 py-1 rounded-md">🎬 Vídeo</span>}
+                            </td>
+                            <td className="px-5 py-4 text-zinc-300 text-sm align-middle font-medium">{row.designerName}</td>
+                            <td className="px-5 py-4 text-zinc-200 text-sm align-middle">
+                              <span>{row.taskName}</span>
+                              {row.deadline && (
+                                <span className="ml-2 text-xs text-zinc-500">
+                                  {new Date(row.deadline + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                                </span>
                               )}
-                            </div>
-                          </td>
-                          <td className="px-3 py-4 align-middle">
-                            <MoveTaskButton taskId={row.taskId} currentPeriodId={row.periodId} periods={periods} />
-                          </td>
-                        </tr>
+                              {row.notes && (
+                                <p className="text-xs text-zinc-600 italic mt-0.5">{row.notes}</p>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 align-middle"><StatusBadge status={row.status} /></td>
+                            <td className="px-5 py-4 align-middle"><StorageToggle row={row} /></td>
+                            <td className="px-5 py-4 align-middle">
+                              <div className="flex items-center gap-3">
+                                <RowActions row={row} />
+                                {row.driveFolderId && (
+                                  <a href={driveUrl(row.driveFolderId)} target="_blank" rel="noopener noreferrer"
+                                    className="text-xs px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400 rounded-lg font-medium transition-colors whitespace-nowrap">
+                                    Pasta ↗
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-3 py-4 align-middle">
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingTaskId(isEditing ? null : row.taskId)}
+                                  className={`text-xs px-2 py-1 rounded-lg transition-colors ${isEditing ? 'text-zinc-300 bg-zinc-700' : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800'}`}
+                                  title="Editar tarefa"
+                                >
+                                  ✏️
+                                </button>
+                                <MoveTaskButton taskId={row.taskId} currentPeriodId={row.periodId} periods={periods} />
+                              </div>
+                            </td>
+                          </tr>
+                          {isEditing && (
+                            <EditRow row={row} onClose={() => setEditingTaskId(null)} />
+                          )}
+                        </React.Fragment>
                       )
                     })}
                   </tbody>

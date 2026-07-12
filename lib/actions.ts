@@ -339,6 +339,20 @@ export async function requestRevision(deliveryId: string, note: string) {
   revalidatePath('/designer')
 }
 
+export async function updateTask(taskId: string, data: {
+  name: string
+  type: 'image' | 'video'
+  deadline: string | null
+  notes: string | null
+}) {
+  const supabase = createServiceClient()
+  await supabase
+    .from('led_tasks')
+    .update({ name: data.name, type: data.type, deadline: data.deadline || null, notes: data.notes || null })
+    .eq('id', taskId)
+  revalidatePath('/director')
+}
+
 export async function toggleStorage(deliveryId: string, current: boolean) {
   const supabase = createServiceClient()
   await supabase
