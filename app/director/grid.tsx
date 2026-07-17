@@ -257,6 +257,13 @@ interface Props {
   designers: { id: string; name: string }[]
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending:   'Pendente',
+  delivered: 'Entregue',
+  revision:  'Revisão',
+  approved:  'Aprovado',
+}
+
 export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLabels, periods, designers }: Props) {
   const router = useRouter()
 
@@ -285,7 +292,77 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
   for (const row of rows) dayMap.get(row.dayLabel)?.push(row)
   const days = Array.from(dayMap.entries())
 
+  const printDate = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+
   return (
+    <>
+    {/* ── Print-only view ── */}
+    <style>{`
+      @media print {
+        body > * { display: none !important; }
+        #pdf-export { display: block !important; }
+        @page { margin: 18mm 14mm; size: A4 landscape; }
+      }
+    `}</style>
+
+    <div id="pdf-export" style={{ display: 'none' }} className="font-sans text-black bg-white p-0">
+      <div className="mb-4 flex items-end justify-between border-b border-gray-300 pb-3">
+        <div>
+          <p className="text-xs text-gray-400 uppercase tracking-widest mb-0.5">CN26 · LED Manager</p>
+          <h1 className="text-xl font-bold text-black">{eventName}</h1>
+        </div>
+        <p className="text-xs text-gray-400">{printDate}</p>
+      </div>
+
+      {days.map(([dayLabel, dayRows]) => (
+        <div key={dayLabel} className="mb-6">
+          <h2 className="text-sm font-bold text-black mb-1.5 uppercase tracking-wide">{dayLabel}</h2>
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Período</th>
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Tipo</th>
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Designer</th>
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Tarefa</th>
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Prazo</th>
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Observação</th>
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Status</th>
+                <th className="border border-gray-300 px-3 py-2 text-left font-semibold">HD/SSD</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dayRows.map((row, idx) => {
+                const prevRow = dayRows[idx - 1]
+                const samePeriod = prevRow?.periodLabel === row.periodLabel
+                return (
+                  <tr key={row.taskId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="border border-gray-200 px-3 py-2 text-gray-500">{samePeriod ? '' : row.periodLabel}</td>
+                    <td className="border border-gray-200 px-3 py-2">{row.taskType === 'image' ? 'Imagem' : 'Vídeo'}</td>
+                    <td className="border border-gray-200 px-3 py-2 font-medium">{row.designerName}</td>
+                    <td className="border border-gray-200 px-3 py-2 font-medium">{row.taskName}</td>
+                    <td className="border border-gray-200 px-3 py-2 text-gray-500">
+                      {row.deadline ? new Date(row.deadline + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '—'}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-2 text-gray-400 italic">{row.notes ?? '—'}</td>
+                    <td className="border border-gray-200 px-3 py-2">{STATUS_LABELS[row.status ?? 'pending']}</td>
+                    <td className="border border-gray-200 px-3 py-2 text-center">{row.onStorage ? '✓' : ''}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ))}
+
+      <div className="mt-6 pt-3 border-t border-gray-200 flex gap-8 text-xs text-gray-400">
+        <span>{rows.length} tarefas</span>
+        <span>{rows.filter(r => r.status === 'approved').length} aprovadas</span>
+        <span>{rows.filter(r => r.status === 'delivered').length} entregues</span>
+        <span>{rows.filter(r => r.status === 'revision').length} em revisão</span>
+        <span>{rows.filter(r => !r.status || r.status === 'pending').length} pendentes</span>
+      </div>
+    </div>
+
     <div className="min-h-screen bg-zinc-950">
       <header className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -302,6 +379,12 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
             <a href={driveUrl(driveFolderId)} target="_blank" rel="noopener noreferrer"
               className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Drive ↗</a>
           )}
+          <button
+            onClick={() => window.print()}
+            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            Exportar PDF ↓
+          </button>
           <a href="/setup/edit" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Editar</a>
           <a href="/setup" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Novo evento</a>
         </div>
@@ -420,5 +503,6 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
         })}
       </div>
     </div>
+    </> // closes print fragment
   )
 }
