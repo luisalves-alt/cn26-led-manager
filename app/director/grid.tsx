@@ -279,17 +279,20 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
   }, [router])
 
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
+  const [filterDesignerId, setFilterDesignerId] = useState<string | null>(null)
 
-  const totalTasks = rows.length
-  const approved = rows.filter(r => r.status === 'approved').length
-  const delivered = rows.filter(r => r.status === 'delivered').length
-  const revision = rows.filter(r => r.status === 'revision').length
-  const pending = rows.filter(r => !r.status || r.status === 'pending').length
+  const visibleRows = filterDesignerId ? rows.filter(r => r.designerId === filterDesignerId) : rows
+
+  const totalTasks = visibleRows.length
+  const approved = visibleRows.filter(r => r.status === 'approved').length
+  const delivered = visibleRows.filter(r => r.status === 'delivered').length
+  const revision = visibleRows.filter(r => r.status === 'revision').length
+  const pending = visibleRows.filter(r => !r.status || r.status === 'pending').length
 
   // Group by day, preserving order from allDayLabels
   const dayMap = new Map<string, DirectorRow[]>()
   for (const label of allDayLabels) dayMap.set(label, [])
-  for (const row of rows) dayMap.get(row.dayLabel)?.push(row)
+  for (const row of visibleRows) dayMap.get(row.dayLabel)?.push(row)
   const days = Array.from(dayMap.entries())
 
   const printDate = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -397,6 +400,43 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
           <div className="flex items-center gap-1.5 text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" /><span className="font-medium">{delivered}</span> entregues</div>
           <div className="flex items-center gap-1.5 text-orange-400"><span className="w-1.5 h-1.5 rounded-full bg-orange-400" /><span className="font-medium">{revision}</span> em revisão</div>
           <div className="flex items-center gap-1.5 text-zinc-600"><span className="w-1.5 h-1.5 rounded-full bg-zinc-700" /><span className="font-medium">{pending}</span> pendentes</div>
+        </div>
+      )}
+
+      {designers.length > 0 && (
+        <div className="px-8 py-3 border-b border-zinc-800/50 flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-zinc-600 mr-1 shrink-0">Profissional:</span>
+          <button
+            onClick={() => setFilterDesignerId(null)}
+            className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
+              filterDesignerId === null
+                ? 'bg-zinc-700 border-zinc-600 text-zinc-100'
+                : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400'
+            }`}
+          >
+            Todos
+          </button>
+          {designers.map(d => {
+            const count = rows.filter(r => r.designerId === d.id).length
+            const doneCount = rows.filter(r => r.designerId === d.id && r.status === 'approved').length
+            const active = filterDesignerId === d.id
+            return (
+              <button
+                key={d.id}
+                onClick={() => setFilterDesignerId(active ? null : d.id)}
+                className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${
+                  active
+                    ? 'bg-blue-600/20 border-blue-500/40 text-blue-300'
+                    : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400'
+                }`}
+              >
+                {d.name}
+                <span className={`text-[10px] ${active ? 'text-blue-400/70' : 'text-zinc-700'}`}>
+                  {doneCount}/{count}
+                </span>
+              </button>
+            )
+          })}
         </div>
       )}
 
