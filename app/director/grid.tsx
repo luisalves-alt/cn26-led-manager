@@ -284,9 +284,19 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [filterDesignerId, setFilterDesignerId] = useState<string | null>(null)
 
-  // Clear filter if the selected designer no longer exists
-  const designerExists = filterDesignerId ? designers.some(d => d.id === filterDesignerId) : true
-  const activeFilter = designerExists ? filterDesignerId : null
+  // Derive filter list from rows so it auto-updates when tasks/designers change
+  const designersForFilter = Array.from(
+    new Map(
+      rows
+        .filter(r => r.designerId && r.designerName)
+        .map(r => [r.designerId, r.designerName] as [string, string])
+    ).entries()
+  )
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+
+  // Clear filter if selected designer no longer has tasks
+  const activeFilter = designersForFilter.some(d => d.id === filterDesignerId) ? filterDesignerId : null
 
   const visibleRows = activeFilter ? rows.filter(r => r.designerId === activeFilter) : rows
 
@@ -410,7 +420,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
         </div>
       )}
 
-      {designers.length > 0 && (
+      {designersForFilter.length > 0 && (
         <div className="px-8 py-3 border-b border-zinc-800/50 flex items-center gap-2 flex-wrap">
           <span className="text-xs text-zinc-600 mr-1 shrink-0">Profissional:</span>
           <button
@@ -423,7 +433,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
           >
             Todos
           </button>
-          {designers.map(d => {
+          {designersForFilter.map(d => {
             const count = rows.filter(r => r.designerId === d.id).length
             const doneCount = rows.filter(r => r.designerId === d.id && r.status === 'approved').length
             const active = activeFilter === d.id
