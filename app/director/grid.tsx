@@ -270,8 +270,11 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
   useEffect(() => {
     const supabase = createBrowserClient()
     const channel = supabase
-      .channel('led-deliveries-watch')
+      .channel('led-director-watch')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'led_deliveries' }, () => {
+        router.refresh()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'led_designers' }, () => {
         router.refresh()
       })
       .subscribe()
@@ -281,7 +284,11 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [filterDesignerId, setFilterDesignerId] = useState<string | null>(null)
 
-  const visibleRows = filterDesignerId ? rows.filter(r => r.designerId === filterDesignerId) : rows
+  // Clear filter if the selected designer no longer exists
+  const designerExists = filterDesignerId ? designers.some(d => d.id === filterDesignerId) : true
+  const activeFilter = designerExists ? filterDesignerId : null
+
+  const visibleRows = activeFilter ? rows.filter(r => r.designerId === activeFilter) : rows
 
   const totalTasks = visibleRows.length
   const approved = visibleRows.filter(r => r.status === 'approved').length
@@ -409,7 +416,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
           <button
             onClick={() => setFilterDesignerId(null)}
             className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-              filterDesignerId === null
+              activeFilter === null
                 ? 'bg-zinc-700 border-zinc-600 text-zinc-100'
                 : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400'
             }`}
@@ -419,7 +426,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
           {designers.map(d => {
             const count = rows.filter(r => r.designerId === d.id).length
             const doneCount = rows.filter(r => r.designerId === d.id && r.status === 'approved').length
-            const active = filterDesignerId === d.id
+            const active = activeFilter === d.id
             return (
               <button
                 key={d.id}
