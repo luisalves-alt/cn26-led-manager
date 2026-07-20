@@ -405,6 +405,7 @@ export default function DirectorGrid({ eventName, driveFolderId, rows, allDayLab
           >
             Exportar PDF ↓
           </button>
+          <a href="/director/organize" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Organizar</a>
           <a href="/setup/edit" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Editar</a>
           <a href="/setup" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Novo evento</a>
         </div>
