@@ -398,3 +398,41 @@ export async function moveTask(taskId: string, newPeriodId: string) {
   await supabase.from('led_tasks').update({ period_id: newPeriodId }).eq('id', taskId)
   revalidatePath('/director')
 }
+
+export async function addTaskToPeriod(taskId: string, periodId: string): Promise<{ slotId?: string; error?: string }> {
+  const supabase = createServiceClient()
+  const { count } = await supabase
+    .from('led_period_slots')
+    .select('id', { count: 'exact', head: true })
+    .eq('period_id', periodId)
+  const { data, error } = await supabase
+    .from('led_period_slots')
+    .insert({ task_id: taskId, period_id: periodId, order_index: count ?? 9999 })
+    .select('id')
+    .single()
+  if (error) return { error: error.message }
+  revalidatePath('/director/organize')
+  return { slotId: data.id }
+}
+
+export async function removeTaskFromPeriod(slotId: string) {
+  const supabase = createServiceClient()
+  await supabase.from('led_period_slots').delete().eq('id', slotId)
+  revalidatePath('/director/organize')
+}
+
+export async function reorderSlots(slotIds: string[]) {
+  const supabase = createServiceClient()
+  await Promise.all(slotIds.map((id, i) =>
+    supabase.from('led_period_slots').update({ order_index: i }).eq('id', id)
+  ))
+  revalidatePath('/director/organize')
+}
+
+export async function reorderTasks(taskIds: string[]) {
+  const supabase = createServiceClient()
+  await Promise.all(taskIds.map((id, i) =>
+    supabase.from('led_tasks').update({ order_index: i }).eq('id', id)
+  ))
+  revalidatePath('/director')
+}

@@ -46,6 +46,21 @@ export interface SetupData {
   schedule: SetupDay[]
 }
 
+export interface OrganizeTask {
+  taskId: string
+  taskName: string
+  taskType: DesignerType
+  designerName: string
+  status: DeliveryStatus | null
+}
+
+export interface SlotRow {
+  slotId: string
+  periodId: string
+  taskId: string
+  orderIndex: number
+}
+
 export interface DirectorRow {
   dayNumber: number
   dayLabel: string

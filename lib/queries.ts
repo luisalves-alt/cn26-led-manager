@@ -1,5 +1,5 @@
 import { createServiceClient } from './supabase'
-import type { Designer, SetupData, SetupDay, SetupPeriod, SetupDesignerSlot, SetupTask, DirectorRow, DesignerType } from '@/types'
+import type { Designer, SetupData, SetupDay, SetupPeriod, SetupDesignerSlot, SetupTask, DirectorRow, OrganizeTask, SlotRow, DesignerType } from '@/types'
 
 export async function getActiveEvent() {
   const supabase = createServiceClient()
@@ -117,6 +117,65 @@ export async function getDesignerData(designerId: string) {
     .sort((a, b) => a.dayNumber - b.dayNumber || a.periodOrder - b.periodOrder || a.taskOrder - b.taskOrder)
 
   return { designer, items }
+}
+
+export async function getOrganizeData(eventId: string): Promise<{
+  allTasks: OrganizeTask[]
+  slots: SlotRow[]
+  periods: { id: string; label: string; dayLabel: string }[]
+  designers: { id: string; name: string }[]
+}> {
+  const supabase = createServiceClient()
+
+  const [{ data: days }, { data: designers }] = await Promise.all([
+    supabase.from('led_days').select('*').eq('event_id', eventId).order('number'),
+    supabase.from('led_designers').select('id, name').eq('event_id', eventId).order('name'),
+  ])
+
+  const periods: { id: string; label: string; dayLabel: string }[] = []
+  for (const day of days ?? []) {
+    const { data: dayPeriods } = await supabase
+      .from('led_periods').select('*').eq('day_id', day.id).order('order_index')
+    for (const period of dayPeriods ?? []) {
+      periods.push({ id: period.id, label: period.label, dayLabel: day.label })
+    }
+  }
+
+  const allPeriodIds = periods.map(p => p.id)
+
+  const [{ data: tasks }, { data: slotsData }] = await Promise.all([
+    supabase
+      .from('led_tasks')
+      .select('id, name, type, led_designers(name), led_deliveries(status)')
+      .in('period_id', allPeriodIds)
+      .order('name'),
+    supabase
+      .from('led_period_slots')
+      .select('id, period_id, task_id, order_index')
+      .in('period_id', allPeriodIds)
+      .order('order_index'),
+  ])
+
+  const allTasks: OrganizeTask[] = (tasks ?? []).map(task => {
+    const designer = task.led_designers as any
+    const delivery = Array.isArray(task.led_deliveries) ? task.led_deliveries[0] : task.led_deliveries
+    return {
+      taskId: task.id,
+      taskName: task.name,
+      taskType: (task.type ?? 'image') as DesignerType,
+      designerName: designer?.name ?? '',
+      status: (delivery?.status ?? null) as any,
+    }
+  })
+
+  const slots: SlotRow[] = (slotsData ?? []).map(s => ({
+    slotId: s.id,
+    periodId: s.period_id,
+    taskId: s.task_id,
+    orderIndex: s.order_index,
+  }))
+
+  return { allTasks, slots, periods, designers: designers ?? [] }
 }
 
 export async function getEventForEdit(eventId: string): Promise<SetupData> {
